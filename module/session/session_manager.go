@@ -14,11 +14,11 @@ type Session struct {
 	model           *model.Session
 	userID          int
 	groupID         int64
-	Cmd             string      `json:"cmd"`
-	State           int         `json:"state"`
-	LastData        string      `json:"last_data"`
-	CurrentDialogID int         `json:"current_dialog_id"`
-	Data            interface{} `json"data"`
+	Cmd             string `json:"cmd"`
+	State           int    `json:"state"`
+	LastData        string `json:"last_data"`
+	CurrentDialogID int    `json:"current_dialog_id"`
+	Data            string `json"data"`
 }
 
 func (s *Session) Get(userID int, groupID int64) (err error) {
@@ -80,6 +80,7 @@ func (s *Session) Put() (err error) {
 func (s *Session) End() (err error) {
 	s.Cmd = ""
 	s.State = 0
+	s.Data = ""
 	err = s.Put()
 	if err != nil {
 		err = errors.Wrap(err, "Session.Put error")

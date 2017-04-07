@@ -185,6 +185,11 @@ func (h *CommandHandler) handle(update tg.Update) (replyMsg tg.Chattable, sess *
 		}
 		// Is the last step =w=
 		if cmd.IsFinalState(sess.State) {
+			_, _, err = cmd.Dialog(sess.State, cquery.Data)
+			if err != nil {
+				err = errors.Wrap(err, "commandHandler.handle error")
+				return
+			}
 			replyMsg, err = cmd.Run()
 			if err != nil {
 				err = errors.Wrap(err, "commandHandler.handle error")
