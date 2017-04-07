@@ -14,10 +14,11 @@ type Session struct {
 	model           *model.Session
 	userID          int
 	groupID         int64
-	Cmd             string `json:"cmd"`
-	State           int    `json:"state"`
-	LastData        string `json:"last_data"`
-	CurrentDialogID int    `json:"current_dialog_id"`
+	Cmd             string      `json:"cmd"`
+	State           int         `json:"state"`
+	LastData        string      `json:"last_data"`
+	CurrentDialogID int         `json:"current_dialog_id"`
+	Data            interface{} `json"data"`
 }
 
 func (s *Session) Get(userID int, groupID int64) (err error) {
