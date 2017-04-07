@@ -1,4 +1,4 @@
-package main
+package simple_tg_bot
 
 func init() {
 

@@ -17,7 +17,7 @@ type CommandHandler struct {
 
 func (h *CommandHandler) Register(cmdStr string, cmdInstance command.Command) (err error) {
 	if h.cmdMap == nil {
-		log.Infof("Initialized Command Table")
+		log.Debugf("Initialized Command Table")
 		h.cmdMap = make(map[string]command.Command)
 	}
 	if _, ok := h.cmdMap[cmdStr]; ok == true {
@@ -25,6 +25,7 @@ func (h *CommandHandler) Register(cmdStr string, cmdInstance command.Command) (e
 		return
 	}
 	h.cmdMap[cmdStr] = cmdInstance
+	log.Infof("Register Command %s complete", cmdStr)
 	return
 }
 
@@ -33,7 +34,7 @@ func (h *CommandHandler) Unregister(cmdStr string) (err error) {
 }
 
 func (h *CommandHandler) Command(cmdStr string) (cmdObj command.Command) {
-	log.Infof("CommandHandler.Command cmdStr = %s", cmdStr)
+	log.Debugf("CommandHandler.Command cmdStr = %s", cmdStr)
 	cmdObj = nil
 	if _, ok := h.cmdMap[cmdStr]; ok == true {
 		cmdObj = h.cmdMap[cmdStr]
@@ -42,9 +43,11 @@ func (h *CommandHandler) Command(cmdStr string) (cmdObj command.Command) {
 }
 
 func (h *CommandHandler) handle(update tg.Update) (replyMsg tg.Chattable, sess *session.Session, doSend bool, err error) {
-	log.Infof("CommandHandler.handle")
+	log.Debugf("CommandHandler.handle")
 	sess = new(session.Session)
 	m := update.Message
+	userID := 0
+	groupID := int64(0)
 	if m == nil {
 		m = update.CallbackQuery.Message
 	}
@@ -57,11 +60,22 @@ func (h *CommandHandler) handle(update tg.Update) (replyMsg tg.Chattable, sess *
 	internalErrorReply.ReplyToMessageID = m.MessageID
 	replyMsg = internalErrorReply
 
+	// We need to get the realUserID & groupID here
+	// If forwarded from A place to B, set to B
+	if update.Message != nil {
+		userID = m.From.ID
+		groupID = m.Chat.ID
+	}
+	if update.CallbackQuery != nil {
+		userID = cquery.From.ID
+		groupID = m.Chat.ID
+	}
+
 	// Excatly only ONE of the above will be triggered
 	if update.Message != nil {
-		log.Infof("Message Recv, Data = %+v", m)
-		userID := m.From.ID
-		groupID := m.Chat.ID
+		log.Debugf("Message Recv, Data = %+v", m)
+		// userID := m.From.ID
+		// groupID := m.Chat.ID
 		err = sess.Get(userID, groupID)
 		if err != nil {
 			err = errors.Wrap(err, "CommandHandler.handle error")
@@ -83,7 +97,7 @@ func (h *CommandHandler) handle(update tg.Update) (replyMsg tg.Chattable, sess *
 
 			// First, no arguments given, show Dialog
 			if m.CommandArguments() == "" || m.CommandArguments == nil {
-				log.Infof("Show dialog")
+				log.Debugf("Show dialog")
 				sess.Cmd = m.Command()
 				sess.State = 0
 				cmd.Init(sess)
@@ -164,11 +178,11 @@ func (h *CommandHandler) handle(update tg.Update) (replyMsg tg.Chattable, sess *
 			acq.CallbackQueryID = cquery.ID
 			h.Bot.AnswerCallbackQuery(acq)
 		}()
-		log.Infof("Call back Query Recv, Data = %s", cquery.Data)
+		log.Debugf("Call back Query Recv, Data = %s", cquery.Data)
 		m := cquery.Message
-		log.Infof("Message from CallbackData get = %+v", m)
-		userID := cquery.From.ID
-		groupID := m.Chat.ID
+		log.Debugf("Message from CallbackData get = %+v", m)
+		// userID := cquery.From.ID
+		// groupID := m.Chat.ID
 		sess.Get(userID, groupID)
 
 		// If not the user who initiate the dialog, abort
@@ -250,7 +264,7 @@ func (h *CommandHandler) Run() {
 		}
 		// Only send commands when need to
 		if ok && reply != nil {
-			log.Infof("Reply to Send %+v", reply)
+			log.Debugf("Reply to Send %+v", reply)
 			m, err := h.Bot.Send(reply)
 			if err != nil {
 				err = errors.Wrap(err, "CommandHandler.Run")
@@ -260,7 +274,7 @@ func (h *CommandHandler) Run() {
 			sess.CurrentDialogID = m.MessageID
 			err = sess.Put()
 			if err != nil {
-				err = errors.Wrap(err, "CommandHandler.handle error")
+				err = errors.Wrap(err, "CommandHandler.Run error")
 				continue
 			}
 		}

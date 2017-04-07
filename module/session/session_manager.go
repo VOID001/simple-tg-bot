@@ -22,7 +22,7 @@ type Session struct {
 }
 
 func (s *Session) Get(userID int, groupID int64) (err error) {
-	log.Infof("Call Session.Get userID=%d groupID=%d", userID, groupID)
+	log.Debugf("Call Session.Get userID=%d groupID=%d", userID, groupID)
 	ss, er := model.SessionByUserIDAndGroupID(model.DB, userID, groupID)
 	if er == sql.ErrNoRows {
 		// The session is not created yet, create it
@@ -44,7 +44,7 @@ func (s *Session) Get(userID int, groupID int64) (err error) {
 			err = errors.Wrap(err, "Session.Get")
 			return
 		}
-		log.Infof("Sucessfully create session for userID %d", userID)
+		log.Debugf("Sucessfully create session for userID %d", userID)
 		return
 	}
 	if er != nil {
