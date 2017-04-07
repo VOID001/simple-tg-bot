@@ -86,7 +86,7 @@ func (h *CommandHandler) handle(update tg.Update) (replyMsg tg.Chattable, sess *
 				log.Infof("Show dialog")
 				sess.Cmd = m.Command()
 				sess.State = 0
-				cmd.SetSession(sess)
+				cmd.Init(sess)
 				replyMsg, err = cmd.ParseMessage(m)
 				if err != nil {
 					err = errors.Wrap(err, "CommandHandler.handle error")
@@ -100,6 +100,7 @@ func (h *CommandHandler) handle(update tg.Update) (replyMsg tg.Chattable, sess *
 				return
 			}
 			// If has arguments, but arguments are wrong, Show usage
+			cmd.Init(sess)
 			replyMsg, err = cmd.ParseMessage(m)
 			if err != nil {
 				err = errors.Wrap(err, "CommandHandler.handle error")
@@ -125,7 +126,7 @@ func (h *CommandHandler) handle(update tg.Update) (replyMsg tg.Chattable, sess *
 				doSend = false
 				return
 			}
-			cmd.SetSession(sess)
+			cmd.Init(sess)
 			replyMsg, err = cmd.ParseMessage(m)
 			if err != nil {
 				err = errors.Wrap(err, "CommandHandler.handle error")
@@ -134,6 +135,12 @@ func (h *CommandHandler) handle(update tg.Update) (replyMsg tg.Chattable, sess *
 			}
 			// Command Not nil, Check if is final
 			if cmd.IsFinalState(sess.State) {
+				_, _, err = cmd.Dialog(sess.State, m.Text)
+				if err != nil {
+					err = errors.Wrap(err, "commandHandler.handle error")
+					return
+				}
+
 				replyMsg, err = cmd.Run()
 				if err != nil {
 					err = errors.Wrap(err, "commandHandler.handle error")
@@ -152,6 +159,11 @@ func (h *CommandHandler) handle(update tg.Update) (replyMsg tg.Chattable, sess *
 		return // We can skip code below safely
 	}
 	if cquery != nil {
+		defer func() {
+			acq := tg.CallbackConfig{}
+			acq.CallbackQueryID = cquery.ID
+			h.Bot.AnswerCallbackQuery(acq)
+		}()
 		log.Infof("Call back Query Recv, Data = %s", cquery.Data)
 		m := cquery.Message
 		log.Infof("Message from CallbackData get = %+v", m)
@@ -177,7 +189,7 @@ func (h *CommandHandler) handle(update tg.Update) (replyMsg tg.Chattable, sess *
 			doSend = false
 			return
 		}
-		cmd.SetSession(sess)
+		cmd.Init(sess)
 		replyMsg, err = cmd.ParseMessage(m)
 		if err != nil {
 			err = errors.Wrap(err, "CommandHandler.handle error")
@@ -206,9 +218,9 @@ func (h *CommandHandler) handle(update tg.Update) (replyMsg tg.Chattable, sess *
 			return
 		}
 		// Callback Query should be answered
-		acq := tg.CallbackConfig{}
-		acq.CallbackQueryID = cquery.ID
-		h.Bot.AnswerCallbackQuery(acq)
+		//acq := tg.CallbackConfig{}
+		//acq.CallbackQueryID = cquery.ID
+		//h.Bot.AnswerCallbackQuery(acq)
 		return
 	}
 	return
@@ -228,6 +240,9 @@ func (h *CommandHandler) Run() {
 
 	for update := range updates {
 		//u.Offset++
+		if update.Message == nil && update.CallbackQuery == nil {
+			continue
+		}
 		reply, sess, ok, err := h.handle(update)
 		if err != nil {
 			err = errors.Wrap(err, "CommandHandler.Run")

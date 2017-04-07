@@ -11,5 +11,5 @@ type Command interface {
 	Run() (msg tg.Chattable, err error)
 	ParseMessage(msg *tg.Message) (errMsg tg.Chattable, err error)
 	IsFinalState(state int) (ok bool)
-	SetSession(sess *session.Session)
+	Init(sess *session.Session, args ...interface{})
 }
