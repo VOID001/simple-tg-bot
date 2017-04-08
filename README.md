@@ -94,7 +94,7 @@ package command
 import (
 	"fmt"
 
-	session "github.com/Wheeeel/todobot/module/session"
+	session "github.com/VOID001/simple-tg-bot/module/session"
 	tg "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/pkg/errors"
 )
